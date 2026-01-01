@@ -1,0 +1,243 @@
+package hyun.messageconnecter.client.tcp;
+
+import hyun.messageconnecter.TcpMessageDeserializer;
+import hyun.messageconnecter.TcpMessageSerializer;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.*;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * TCP 메시지 송수신 클라이언트
+ * 하나의 클라이언트 인스턴스로 여러 메시지 타입을 처리할 수 있습니다.
+ * <p>
+ * 설계 특징:
+ * - 제네릭 타입 제거: 클라이언트 인스턴스 생성 시 타입 고정 문제 해결
+ * - 동적 타입 처리: send 메서드 호출 시마다 응답 타입 지정 가능
+ * - 여러 메시지 타입 지원: 하나의 클라이언트로 다양한 요청/응답 처리
+ * - 완전 비동기: 연결부터 데이터 전송까지 모든 작업이 비동기로 처리됨
+ * <p>
+ * 스레드 안전성:
+ * - Bootstrap과 EventLoopGroup은 스레드 안전함 (Netty 공식 문서)
+ * - 각 send() 호출은 독립적인 Channel을 생성하므로 동시성 문제 없음
+ * - 여러 스레드에서 동시에 send()를 호출해도 안전함
+ */
+public class TcpMessageClient {
+
+    private static final Logger log = LoggerFactory.getLogger(TcpMessageClient.class);
+
+    private final String host;
+    private final int port;
+    private final int connectionTimeout;
+    private final int readTimeout;
+    private final Bootstrap bootstrap;
+    private final EventLoopGroup eventLoopGroup;
+    private final TcpMessageSerializer serializer;
+    private final TcpMessageDeserializer deserializer;
+    private final String charset;
+
+    public TcpMessageClient(
+            String host,
+            int port,
+            int connectionTimeout,
+            int readTimeout,
+            String charset,
+            EventLoopGroup eventLoopGroup,
+            TcpMessageSerializer serializer,
+            TcpMessageDeserializer deserializer) {
+        this.host = host;
+        this.port = port;
+        this.connectionTimeout = connectionTimeout;
+        this.readTimeout = readTimeout;
+        this.charset = charset;
+        this.eventLoopGroup = eventLoopGroup;
+        this.serializer = serializer;
+        this.deserializer = deserializer;
+        this.bootstrap = init(eventLoopGroup);
+    }
+
+    /**
+     * 요청 전송 및 응답 수신
+     *
+     * @param request 요청 객체 (타입 제약 없음)
+     * @param responseClass 응답 클래스 타입
+     * @param <RESP> 응답 타입
+     * @return 응답 객체 Future
+     */
+    @SuppressWarnings("unchecked")
+    public <RESP> CompletableFuture<RESP> send(Object request, Class<RESP> responseClass) {
+        CompletableFuture<RESP> futureResponse = new CompletableFuture<>();
+
+        try {
+            // 요청 직렬화
+            byte[] requestBytes = serializer.serialize(request);
+            log.debug("Sending {} bytes to {}:{}", requestBytes.length, host, port);
+
+            ChannelFuture connectFuture = bootstrap.connect(host, port);
+
+            // 연결 완료 리스너 (비동기)
+            connectFuture.addListener((ChannelFutureListener) future -> {
+                if (future.isSuccess()) {
+                    Channel channel = connectFuture.channel();
+
+                    // Handler에 Future 설정 (타입 안전성은 런타임에 보장됨)
+                    ClientHandler handler = channel.pipeline().get(ClientHandler.class);
+                    handler.setFutureResponse((CompletableFuture<Object>) futureResponse);
+                    handler.setResponseClass(responseClass);
+                    handler.setDeserializer(deserializer);
+
+                    // 데이터 전송 (연결 성공 후)
+                    ByteBuf buffer = Unpooled.wrappedBuffer(requestBytes);
+                    channel.writeAndFlush(buffer).addListener(writeFuture -> {
+                        if (!writeFuture.isSuccess()) {
+                            log.error("Failed to write data", writeFuture.cause());
+                            futureResponse.completeExceptionally(writeFuture.cause());
+                            channel.close();
+                        }
+                    });
+
+                    // 타임아웃 설정 (연결 종료는 channelInactive에서 처리)
+                    futureResponse.orTimeout(readTimeout, TimeUnit.MILLISECONDS).exceptionally(ex -> {
+                        log.error("Request timeout after {}ms", readTimeout);
+                        channel.close();
+                        return null;
+                    });
+
+                } else {
+                    // 연결 실패
+                    log.error("Failed to connect to {}:{}", host, port, future.cause());
+                    futureResponse.completeExceptionally(future.cause());
+                }
+            });
+
+        } catch (Exception e) {
+            log.error("Failed to send request", e);
+            futureResponse.completeExceptionally(e);
+        }
+
+        return futureResponse;
+    }
+
+    /**
+     * 클라이언트 종료
+     */
+    public void shutdown() {
+        eventLoopGroup.shutdownGracefully();
+    }
+
+    /**
+     * Bootstrap 초기화
+     */
+    private Bootstrap init(EventLoopGroup eventLoopGroup) {
+        Bootstrap bootstrap = new Bootstrap();
+        bootstrap.group(eventLoopGroup)
+                .channel(NioSocketChannel.class)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectionTimeout)
+                .option(ChannelOption.TCP_NODELAY, true)
+                .option(ChannelOption.SO_KEEPALIVE, true)
+                .handler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    protected void initChannel(SocketChannel ch) {
+                        ch.pipeline().addLast(new ClientHandler());
+                    }
+                });
+
+        return bootstrap;
+    }
+
+    /**
+     * Netty Channel Handler
+     * 응답 바이트를 수신하여 역직렬화합니다.
+     */
+    private static class ClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
+        private final ByteBuf buffer = Unpooled.buffer();
+        private CompletableFuture<Object> futureResponse;
+        private Class<?> responseClass;
+        private TcpMessageDeserializer deserializer;
+        private boolean bufferReleased = false;  // ✅ 추가: release 상태 추적
+
+        public CompletableFuture<Object> getFutureResponse() {
+            return futureResponse;
+        }
+
+        public void setFutureResponse(CompletableFuture<Object> futureResponse) {
+            this.futureResponse = futureResponse;
+        }
+
+        public Class<?> getResponseClass() {
+            return responseClass;
+        }
+
+        public void setResponseClass(Class<?> responseClass) {
+            this.responseClass = responseClass;
+        }
+
+        public TcpMessageDeserializer getDeserializer() {
+            return deserializer;
+        }
+
+        public void setDeserializer(TcpMessageDeserializer deserializer) {
+            this.deserializer = deserializer;
+        }
+
+        @Override
+        protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) {
+            // 수신된 바이트 누적
+            buffer.writeBytes(msg);
+            log.debug("Received {} bytes, total {} bytes", msg.readableBytes(), buffer.readableBytes());
+        }
+
+        @Override
+        public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+            // 연결 종료 시 역직렬화
+            try {
+                if (buffer.readableBytes() > 0) {
+                    byte[] responseBytes = new byte[buffer.readableBytes()];
+                    buffer.readBytes(responseBytes);
+
+                    log.debug("Deserializing {} bytes", responseBytes.length);
+                    Object response = deserializer.deserialize(responseBytes, responseClass);
+                    futureResponse.complete(response);
+                } else {
+                    futureResponse.completeExceptionally(
+                            new RuntimeException("No response received"));
+                }
+            } catch (Exception e) {
+                log.error("Failed to deserialize response", e);
+                futureResponse.completeExceptionally(e);
+            } finally {
+                // ✅ 수정: 안전한 release
+                releaseBufferSafely();
+                super.channelInactive(ctx);
+            }
+        }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            log.error("Exception caught in TCP client", cause);
+            futureResponse.completeExceptionally(cause);
+            // ✅ 수정: 안전한 release (중복 방지)
+            releaseBufferSafely();
+            ctx.close();
+        }
+
+        /**
+         * ✅ 추가: ByteBuf를 안전하게 release
+         * 중복 release를 방지합니다.
+         */
+        private void releaseBufferSafely() {
+            if (!bufferReleased && buffer.refCnt() > 0) {
+                buffer.release();
+                bufferReleased = true;
+                log.debug("ByteBuf released safely");
+            }
+        }
+    }
+}

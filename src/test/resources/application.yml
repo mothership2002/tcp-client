@@ -1,0 +1,15 @@
+# 테스트용 설정 파일
+
+test:
+  tcp:
+    host: localhost
+    port: 9090
+
+bank:
+  tcp:
+    host: 192.168.100.50
+    port: 8080
+
+notification:
+  api:
+    url: https://api.notification.test.com

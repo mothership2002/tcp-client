@@ -1,0 +1,61 @@
+plugins {
+    id 'java-library'
+    id 'org.springframework.boot' version '4.0.1'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'hyun'
+version = '1.1.0'
+description = 'TCP Client Spring Boot Starter'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+// 라이브러리이므로 bootJar 비활성화, jar 활성화
+tasks.named('bootJar') {
+    enabled = false
+}
+
+tasks.named('jar') {
+    enabled = true
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Spring Boot Starter (web 제거 - TCP 전용)
+    api 'org.springframework.boot:spring-boot-starter'
+
+    // Netty for TCP communication
+    api 'io.netty:netty-all:4.1.130.Final'
+
+    // Micrometer for metrics (optional)
+    compileOnly 'io.micrometer:micrometer-core'
+
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'io.micrometer:micrometer-core'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    exclude(
+            'hyun/messageconnecter/asis/**'
+    )
+}
