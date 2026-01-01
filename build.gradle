@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'hyun'
-version = '1.1.0'
+version = '1.1.1'
 description = 'TCP Client Spring Boot Starter'
 
 java {
