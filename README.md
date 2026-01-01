@@ -33,7 +33,7 @@ Spring Boot의 AutoConfiguration과 동적 프록시를 활용하여 레거시 �
 ```gradle
 // build.gradle
 dependencies {
-    implementation 'com.github.yourusername:tcp-client-spring-boot-starter:1.1.0'
+    implementation 'com.github.mothership2002:tcp-client:v1.1.1'
 }
 ```
 
@@ -313,7 +313,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.yourusername:tcp-client-spring-boot-starter:1.1.0'
+    implementation 'com.github.mothership2002:tcp-client:v1.1.1'
 }
 ```
 
@@ -328,9 +328,9 @@ dependencies {
 </repositories>
 
 <dependency>
-    <groupId>com.github.yourusername</groupId>
-    <artifactId>tcp-client-spring-boot-starter</artifactId>
-    <version>1.1.0</version>
+    <groupId>com.github.mothership2002</groupId>
+    <artifactId>tcp-client</artifactId>
+    <version>v1.1.1</version>
 </dependency>
 ```
 
