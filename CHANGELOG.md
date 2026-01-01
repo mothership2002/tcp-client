@@ -7,19 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- **ExecutorService Integration** - Dedicated thread pool for CompletableFuture callbacks
-  - `tcpClientExecutor` bean for handling asynchronous callbacks
-  - Prevents CompletableFuture callbacks from blocking Netty EventLoop threads
-  - Uses CachedThreadPool for dynamic scaling (60s idle thread timeout)
-  - Improves performance and responsiveness under high load
+## [1.1.1] - 2026-01-01
 
-### Changed
-- Updated README.md with v1.1.0 features
-- Bumped version to 1.1.0 in build.gradle
-- **TcpMessageClient** - Now accepts ExecutorService for callback execution
-- **TcpClientAutoConfiguration** - Added ExecutorService bean with @Primary annotation
-- **TcpClientFactoryBean** - Explicitly requests tcpClientExecutor by name
+### Fixed
+- **Netty 4.2 API Migration** - Eliminated deprecation warnings
+  - Migrated from `NioEventLoopGroup` to `MultiThreadIoEventLoopGroup`
+  - Uses `NioIoHandler.newFactory()` following Netty 4.2.x best practices
+  - Compatible with Spring Boot 4.0.1's Netty 4.2.9.Final dependency
+  - All tests pass with no functional changes
+
+### Added
+- **NETTY_4.2_MIGRATION.md** - Migration guide for users with custom EventLoopGroup beans
 
 ## [1.1.0] - 2026-01-01
 
@@ -33,6 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `LoggingInterceptor` - Request/response logging
   - `RetryInterceptor` - Exponential backoff retry mechanism
   - `MetricsInterceptor` - Micrometer metrics collection (Prometheus, Grafana integration)
+- **ExecutorService Integration** - Dedicated thread pool for CompletableFuture callbacks
+  - `tcpClientExecutor` bean for handling asynchronous callbacks
+  - Prevents CompletableFuture callbacks from blocking Netty EventLoop threads
+  - Uses CachedThreadPool for dynamic scaling (60s idle thread timeout)
+  - Improves performance and responsiveness under high load
 - **Comprehensive Tests**
   - `InterceptorChainTest` - Unit tests for interceptor execution order, response modification, exception propagation
   - `InterceptorE2ETest` - E2E tests with custom interceptors, request counter, and TransactionInterceptor
@@ -42,6 +45,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `NEXT_SESSION_CONTEXT.md` - v1.0.0 status and next session goals
 
 ### Changed
+- **TcpMessageClient** - Now accepts ExecutorService for callback execution
+- **TcpClientAutoConfiguration** - Added ExecutorService bean with @Primary annotation
+- **TcpClientFactoryBean** - Explicitly requests tcpClientExecutor by name
 - Enhanced test coverage with interceptor chain tests
 - Improved project documentation structure
 

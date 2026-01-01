@@ -3,7 +3,8 @@ package hyun.messageconnecter.config;
 import hyun.messageconnecter.TcpMessageDeserializer;
 import hyun.messageconnecter.TcpMessageSerializer;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.MultiThreadIoEventLoopGroup;
+import io.netty.channel.nio.NioIoHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -49,13 +50,17 @@ public class TcpClientAutoConfiguration {
 
     /**
      * Netty EventLoopGroup Bean 생성
+     * <p>
+     * Netty 4.2+에서는 MultiThreadIoEventLoopGroup과 NioIoHandler를 사용하여 생성합니다.
+     * 스레드 수를 지정하지 않으면 기본값(CPU 코어 수 * 2)이 사용됩니다.
+     * <p>
      * 사용자가 직접 정의하지 않은 경우에만 생성됩니다.
      */
     @Bean
     @ConditionalOnMissingBean
     public EventLoopGroup eventLoopGroup() {
-        log.info("Creating default EventLoopGroup bean");
-        return new NioEventLoopGroup();
+        log.info("Creating default EventLoopGroup bean using MultiThreadIoEventLoopGroup with NioIoHandler");
+        return new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory());
     }
 
     /**

@@ -7,7 +7,8 @@ import hyun.messageconnecter.e2e.MockTcpServer;
 import hyun.messageconnecter.fixture.tcp.autocal.FramedMessage;
 import hyun.messageconnecter.fixture.tcp.autocal.LegacyMessage;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.MultiThreadIoEventLoopGroup;
+import io.netty.channel.nio.NioIoHandler;
 import org.junit.jupiter.api.*;
 
 import java.util.concurrent.CompletableFuture;
@@ -68,7 +69,7 @@ class TcpClientE2ETest {
 
     @BeforeEach
     void setUp() {
-        eventLoopGroup = new NioEventLoopGroup();
+        eventLoopGroup = new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory());
         executor = Executors.newCachedThreadPool();
         tcpClient = new TcpMessageClient(
                 TEST_HOST,
