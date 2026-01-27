@@ -16,17 +16,17 @@ Spring Boot의 AutoConfiguration과 동적 프록시를 활용하여 레거시 �
 > 이 라이브러리는 바이트 단위 직렬화/역직렬화, 체크섬 계산, STX/ETX 프레이밍 등을 자동화하여
 > 레거시 TCP 통신을 Spring 스타일로 처리할 수 있게 합니다.
 
-## 🆕 v1.1.0 새로운 기능
+## v1.1.0 새로운 기능
 
-- ✅ **인터셉터 체인** - 로깅, 재시도, 메트릭 등 횡단 관심사 처리
-- ✅ **LoggingInterceptor** - 요청/응답 자동 로깅
-- ✅ **RetryInterceptor** - Exponential Backoff 재시도
-- ✅ **TransactionInterceptor** - 트랜잭션 ID 자동 생성 및 MDC 관리
-- ✅ **MetricsInterceptor** - Micrometer 메트릭 수집 (Prometheus, Grafana 연동)
+-  **인터셉터 체인** - 로깅, 재시도, 메트릭 등 횡단 관심사 처리
+-  **LoggingInterceptor** - 요청/응답 자동 로깅
+-  **RetryInterceptor** - Exponential Backoff 재시도
+-  **TransactionInterceptor** - 트랜잭션 ID 자동 생성 및 MDC 관리
+-  **MetricsInterceptor** - Micrometer 메트릭 수집 (Prometheus, Grafana 연동)
 
 ---
 
-## 🚀 QuickStart (5분 안에 시작하기)
+## QuickStart (5분 안에 시작하기)
 
 ### 1. 의존성 추가
 
@@ -147,7 +147,7 @@ bank:
 
 ---
 
-## 🎯 주요 기능
+## 주요 기능
 
 ### 1. 고정 길이 프로토콜 지원
 
@@ -241,7 +241,7 @@ private LocalDate dateField;
 private LocalTime timeField;
 ```
 
-### 7. 인터셉터 (v1.1.0+) ⭐ NEW
+### 7. 인터셉터 (v1.1.0+) 
 
 횡단 관심사(로깅, 메트릭, 재시도)를 인터셉터로 처리할 수 있습니다.
 
@@ -302,7 +302,7 @@ MetricsInterceptor → CustomInterceptor → 실제 TCP 호출
 
 ---
 
-## 📦 설치
+## 설치
 
 ### Gradle
 
@@ -336,7 +336,7 @@ dependencies {
 
 ---
 
-## ⚙️ 설정
+## 설정
 
 ### AutoConfiguration (자동 설정)
 
@@ -411,7 +411,7 @@ logging:
 
 ---
 
-## 🔥 실제 사용 예제
+## 실제 사용 예제
 
 ### 예제 1: 은행 계좌 이체
 
@@ -603,7 +603,7 @@ public class PaymentService {
 
 ---
 
-## 🧪 테스트
+## 테스트
 
 ### 단위 테스트
 
@@ -636,7 +636,7 @@ class BankServiceTest {
 
 ---
 
-## 📚 문서
+## 문서
 
 자세한 내용은 다음 문서를 참고하세요:
 
@@ -647,12 +647,6 @@ class BankServiceTest {
 - **[로드맵](.docs/ROADMAP.md)** - 향후 개발 계획
 
 ---
-
-## ⚡ 성능
-
-- **처리량**: ~10,000 TPS (단일 인스턴스)
-- **레이턴시**: ~10ms (P99)
-- **메모리**: ~100MB (1,000 동시 연결)
 
 ### 메트릭 모니터링 (v1.1.0+)
 
@@ -699,7 +693,7 @@ sum(rate(tcp_client_requests_total[5m]))
 
 ---
 
-## 🤝 기여
+##  기여
 
 이슈 및 PR을 환영합니다!
 
@@ -711,13 +705,13 @@ sum(rate(tcp_client_requests_total[5m]))
 
 ---
 
-## 📄 라이선스
+##  라이선스
 
 MIT License - 자유롭게 사용하세요!
 
 ---
 
-## 🙏 감사
+##  감사
 
 이 프로젝트는 다음 기술을 사용합니다:
 
@@ -728,10 +722,10 @@ MIT License - 자유롭게 사용하세요!
 
 ---
 
-## 📞 문의
+##  문의
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/tcp-client-spring-boot-starter/issues)
+- **Issues**: [GitHub Issues](https://github.com/mothership2002/tcp-client/issues)
 
 ---
 
-**Made with ❤️ using Vibe Coding (AI-Assisted Development)**
+**Made with using Vibe Coding (AI-Assisted Development)**
